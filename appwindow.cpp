@@ -75,15 +75,8 @@ bool AppWindow::on_key_press_event( GdkEventKey *ev )
 	// An example key; delete and replace with the
 	// keys you want to process
 	// GDK_Left, _up, Right, Down
-	
-    if( ev->keyval == 't' ) 
+  	if (ev->keyval == GDK_Shift_L || ev->keyval == GDK_Shift_R)
 	{
-			std::cerr << "Hello!" << std::endl;
-			return true;
-    }
-	else if (ev->keyval == GDK_Shift_L || ev->keyval == GDK_Shift_R)
-	{
-		std::cerr << "Receiving shift" << std::endl;
 		m_viewer.startScale();
 		return Gtk::Window::on_key_press_event( ev );
 	}

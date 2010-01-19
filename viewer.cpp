@@ -55,7 +55,6 @@ Viewer::Viewer()
 										Gdk::GL::MODE_MULTISAMPLE );
 	if (glconfig == 0) {
 	  // If we can't get this configuration, die
-	  std::cerr << "Unable to setup OpenGL Configuration!" << std::endl;
 	  abort();
 	}
 
@@ -195,19 +194,19 @@ bool Viewer::on_expose_event(GdkEventExpose* event)
 	if (rotationAngleZ != 0)
 		glRotated(rotationAngleZ, 0, 0, 1);
 	
-	if (mouseB1Down || rotateAboutX)
+	if ((mouseB1Down && !shiftIsDown) || rotateAboutX)
 	{
 		rotationAngleX += rotationSpeed;
 		if (rotationAngleX > 360)
 			rotationAngleX -= 360;
 	}
-	if (mouseB2Down || rotateAboutY)
+	if ((mouseB2Down && !shiftIsDown) || rotateAboutY)
 	{
 		rotationAngleY += rotationSpeed;
 		if (rotationAngleY > 360)
 			rotationAngleY -= 360;
 	}
-	if (mouseB3Down || rotateAboutZ)
+	if ((mouseB3Down && !shiftIsDown) || rotateAboutZ)
 	{
 		rotationAngleZ += rotationSpeed;
 		if (rotationAngleZ > 360)
@@ -226,15 +225,12 @@ bool Viewer::on_expose_event(GdkEventExpose* event)
 	for (int y = -1;y< 20;y++)
 	{
 		drawCube(y, -1, 7, GL_LINE_LOOP);
-		//drawCube(y, -1, 7, GL_QUADS);
 		
 		drawCube(y, 10, 7, GL_LINE_LOOP);
-		//drawCube(y, 10, 7, GL_QUADS);
 	}
 	for (int x = 0;x < 10; x++)
 	{
 		drawCube (-1, x, 7, GL_LINE_LOOP);
-		//drawCube (-1, x, 7, GL_QUADS);
 	}
 	
 	// Draw current state of tetris
@@ -335,7 +331,6 @@ bool Viewer::on_button_press_event(GdkEventButton* event)
 	startPos[1] = event->y;
 	mouseDownPos[0] = event->x;
 	mouseDownPos[1] = event->y;
-	std::cerr << "Stub: Button " << event->button << " pressed" << " at pos " << event->x << ", " << event->y << std::endl;
 	
 	if ((rotateAboutX || rotateAboutY || rotateAboutZ) && !shiftIsDown)
 	{
@@ -343,7 +338,7 @@ bool Viewer::on_button_press_event(GdkEventButton* event)
 		rotateTimer.disconnect();
 	}
 		
-	std::cerr << "Reset Rotation speed " << rotationSpeed << std::endl;
+	
 	if (event->button == 1)
 		mouseB1Down = true;	
 	if (event->button == 2)
@@ -357,7 +352,6 @@ bool Viewer::on_button_press_event(GdkEventButton* event)
 		rotateAboutY = false;
 		rotateAboutZ = false;
 	}
-	std::cerr << "Button 1 is " << mouseB1Down << " button 2 is " << mouseB2Down << "button 3 is " << mouseB3Down << std::endl;
 	return true;
 }
 
@@ -365,20 +359,15 @@ bool Viewer::on_button_release_event(GdkEventButton* event)
 {
 	startScalePos[0] = 0;
 	startScalePos[1] = 0;
-	//std::cerr << "Stub: Button " << event->button << " released" << " at pos " << event->x << ", " << event->y << std::endl;
-	std::cerr << "Mouse Release " << event->x << ", " << event->y << " button: " << event->button << std::endl;		
 	if (shiftIsDown)
 	{
 		return true;
 	}
 
-	std::cerr << "mdown time: " << event->time << " last motion time: " << timeOfLastMotionEvent;
 	long difference = (long)timeOfLastMotionEvent - (long)event->time;
-	std::cerr << " diff time " << difference << std::endl;
 	if (difference > -50)
 		rotationSpeed = (event->x - mouseDownPos[0]) / 10;
 
-	std::cerr << "Change in x: " << (event->x - mouseDownPos[0]) << ", Rotation speed " << rotationSpeed << std::endl;
 
 	if (event->button == 1)
 	{
@@ -423,7 +412,6 @@ bool Viewer::on_motion_notify_event(GdkEventMotion* event)
 		
 		if (x2x1 != 0)
 		{
-			std::cerr << "Change in x: " << x2x1 << std::endl;
 			x2x1 /= 500;
 			scaleFactor += x2x1;				
 		}
@@ -433,7 +421,6 @@ bool Viewer::on_motion_notify_event(GdkEventMotion* event)
 		else if (scaleFactor > 2)
 			scaleFactor = 2;
 			
-		std::cerr << "Scale factor " << scaleFactor << std::endl;
 		startScalePos[0] = event->x;
 		startScalePos[1] = event->y;
 		if (rotateTimer.connected())
@@ -459,7 +446,6 @@ bool Viewer::on_motion_notify_event(GdkEventMotion* event)
 			rotateTimer = Glib::signal_timeout().connect(sigc::bind(sigc::mem_fun(*this, &Viewer::on_expose_event), (GdkEventExpose *)NULL), 100);
 	}
 	
-	std::cerr << "Mouse Motion: " << event->x << ", " << event->y <<  " state " << event->state << std::endl;
 	startPos[0] = event->x;
 	startPos[1] = event->y;
 	invalidate();
@@ -830,7 +816,6 @@ void Viewer::setSpeed(Speed newSpeed)
 void Viewer::toggleBuffer() 
 { 
 	doubleBuffer = !doubleBuffer;
-	std::cerr << "double buffer is " << doubleBuffer << std::endl;
 	invalidate();
 }
 
@@ -885,7 +870,6 @@ bool Viewer::gameTick()
 		linesLeftTillNextLevel += 10;
 		gameSpeed -= 50;
 		
-		std::cerr << game->getLinesCleared() << " cleared " << std::endl; 
 		// Update game tick timer
 		tickTimer.disconnect();
 		tickTimer = Glib::signal_timeout().connect(sigc::mem_fun(*this, &Viewer::gameTick), gameSpeed);
