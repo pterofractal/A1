@@ -76,11 +76,11 @@ bool AppWindow::on_key_press_event( GdkEventKey *ev )
 	// keys you want to process
 	// GDK_Left, _up, Right, Down
 	
-        if( ev->keyval == 't' ) 
+    if( ev->keyval == 't' ) 
 	{
 			std::cerr << "Hello!" << std::endl;
 			return true;
-        }
+    }
 	else if (ev->keyval == GDK_Shift_L || ev->keyval == GDK_Shift_R)
 	{
 		std::cerr << "Receiving shift" << std::endl;

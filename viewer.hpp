@@ -46,9 +46,7 @@ public:
 	bool gameTick();
 		
 	virtual bool on_key_press_event( GdkEventKey *ev );
-	
-	void initSideColours();
-	
+		
 	void resetView();
 	void newGame();
 	
@@ -138,12 +136,9 @@ private:
 	// Game over flag
 	bool gameOver;
 	
-	// Colour array
-	struct SideColour {
-		double r, g, b;
-	};
-	SideColour *sideColours;
-	
+	// Lighting flag
+	bool lightingFlag;
+		
 	// Label widgets
 	Gtk::Label *scoreLabel, *linesClearedLabel;
 };
