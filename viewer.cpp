@@ -359,31 +359,32 @@ bool Viewer::on_button_release_event(GdkEventButton* event)
 {
 	startScalePos[0] = 0;
 	startScalePos[1] = 0;
-	if (shiftIsDown)
+
+	if (!shiftIsDown)
 	{
-		return true;
+		long difference = (long)timeOfLastMotionEvent - (long)event->time;
+		if (difference > -50)
+			rotationSpeed = (event->x - mouseDownPos[0]) / 10;	
 	}
-
-	long difference = (long)timeOfLastMotionEvent - (long)event->time;
-	if (difference > -50)
-		rotationSpeed = (event->x - mouseDownPos[0]) / 10;
-
 
 	if (event->button == 1)
 	{
 		mouseB1Down = false;
-		rotateAboutX = true;
+		if (!shiftIsDown)
+			rotateAboutX = true;
 	}	
 	if (event->button == 2)
 	{
 		mouseB2Down = false;
-		rotateAboutY = true;
+		if (!shiftIsDown)
+			rotateAboutY = true;
 	}
 		
 	if (event->button == 3)
 	{
 		mouseB3Down = false;
-		rotateAboutZ = true;
+		if (!shiftIsDown)
+			rotateAboutZ = true;
 	}
 		
 	if (mouseB1Down && mouseB2Down && mouseB3Down)
@@ -893,6 +894,9 @@ void Viewer::resetView()
 	rotationAngleX = 0;
 	rotationAngleY = 0;
 	rotationAngleZ = 0;
+	rotateAboutX = false;
+	rotateAboutY = false;
+	rotateAboutZ = false;
 	rotateTimer.disconnect();
 	
 	scaleFactor = 1;
