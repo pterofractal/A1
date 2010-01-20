@@ -30,9 +30,6 @@ public:
 	void invalidate();
 	void setDrawMode(DrawMode newDrawMode);
 	
-	void setRotationVec (Vector3D newVec);
-	Vector3D getRotationVec();
-	
 	void setRotationAngle (int angle);
 	int getRotationAngle();
 	
@@ -84,8 +81,6 @@ private:
 	
 	DrawMode currentDrawMode;
 	
-	Vector3D rotationVec;
-	
 	// The angle at which we are currently rotated
 	double rotationAngleX, rotationAngleY, rotationAngleZ;
 
@@ -106,9 +101,7 @@ private:
 	
 	// Flag used to denote that the shift key is held down
 	bool shiftIsDown;
-	
-	bool disableSpin;
-	
+		
 	// Flag that determines when to use doubleBuffer
 	bool doubleBuffer;
 	

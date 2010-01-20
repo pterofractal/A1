@@ -3,7 +3,6 @@
 #include <sstream>
 #include <GL/gl.h>
 #include <GL/glu.h>
-#include <GL/glut.h>
 #include <assert.h>
 #include "appwindow.hpp"
 
@@ -32,7 +31,6 @@ Viewer::Viewer()
 	rotateAboutY = false;
 	rotateAboutZ = false;
 	
-	linesLeftTillNextLevel = 10;
 	
 	// Game starts at a slow pace of 500ms
 	gameSpeed = 500;
@@ -75,17 +73,6 @@ Viewer::Viewer()
 	
 	// Start game tick timer
 	tickTimer = Glib::signal_timeout().connect(sigc::mem_fun(*this, &Viewer::gameTick), gameSpeed);
-	
-/*	// Start render timer
-	sigc::slot1<bool, GdkEventExpose *> reRender_slot = sigc::mem_fun(*this, &Viewer::on_expose_event);
-	Glib::RefPtr<Glib::TimeoutSource> timeout_source = Glib::TimeoutSource::create(100);
-	timeout_source->connect(sigc::bind( reRender_slot, new GdkEventExpose() ) );
- 	timeout_source->attach(Glib::MainContext::get_default());
-*/
-
-/*	rotateTimer = Glib::signal_timeout().connect(sigc::bind(sigc::mem_fun(*this, &Viewer::on_expose_event), (GdkEventExpose *)NULL), 100);
-	rotateTimer.disconnect();
-*/
 }
 
 Viewer::~Viewer()
@@ -120,28 +107,6 @@ void Viewer::on_realize()
 	glEnable(GL_DEPTH_TEST);
 	glClearColor(0.7, 0.7, 1.0, 0.0);
 	
-	// Let OpenGL normalize vectors for lighting
-//	glEnable(GL_NORMALIZE);
-	
-	
-	// Initialize lighting settings
-	glShadeModel(GL_SMOOTH);
-	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
-	glEnable(GL_LIGHTING);
-	// Create one light source
-	glEnable(GL_LIGHT0);
-	glEnable(GL_COLOR_MATERIAL);
-	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-	// Define properties of light 
-	float ambientLight0[] = { 0.3f, 0.3f, 0.3f, 1.0f };
-	float diffuseLight0[] = { 0.8f, 0.8f, 0.8f, 1.0f };
-	float specularLight0[] = { 0.6f, 0.6f, 0.6f, 1.0f };
-	float position0[] = { 5.0f, 0.0f, 0.0f, 1.0f };	
-	glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight0);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight0);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, specularLight0);
-	glLightfv(GL_LIGHT0, GL_POSITION, position0);
-	
 	gldrawable->gl_end();
 }
 
@@ -154,14 +119,11 @@ bool Viewer::on_expose_event(GdkEventExpose* event)
 	if (!gldrawable->gl_begin(get_gl_context()))
 		return false;
 
+	// Decide which buffer to write to
 	if (doubleBuffer)
-	{
 		glDrawBuffer(GL_BACK);	
-	}
 	else
-	{
 		glDrawBuffer(GL_FRONT);
-	}
 		
 			
 	// Clear the screen
@@ -178,8 +140,29 @@ bool Viewer::on_expose_event(GdkEventExpose* event)
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	
-	// Not implemented: set up lighting (if necessary)
-
+	// set up lighting (if necessary)
+	// Followed the tutorial found http://www.falloutsoftware.com/tutorials/gl/gl8.htm
+	// to implement lighting
+	
+	// Initialize lighting settings
+	glShadeModel(GL_SMOOTH);
+	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+	glEnable(GL_LIGHTING);
+	
+	// Create one light source
+	glEnable(GL_LIGHT0);
+	glEnable(GL_COLOR_MATERIAL);
+	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+	// Define properties of light 
+	float ambientLight0[] = { 0.3f, 0.3f, 0.3f, 1.0f };
+	float diffuseLight0[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+	float specularLight0[] = { 0.6f, 0.6f, 0.6f, 1.0f };
+	float position0[] = { 5.0f, 0.0f, 0.0f, 1.0f };	
+	glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight0);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight0);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, specularLight0);
+	glLightfv(GL_LIGHT0, GL_POSITION, position0);
+	
 	// Scale and rotate the scene
 	
 	if (scaleFactor != 1)
@@ -194,6 +177,7 @@ bool Viewer::on_expose_event(GdkEventExpose* event)
 	if (rotationAngleZ != 0)
 		glRotated(rotationAngleZ, 0, 0, 1);
 	
+	// Increment rotation angles for next render
 	if ((mouseB1Down && !shiftIsDown) || rotateAboutX)
 	{
 		rotationAngleX += rotationSpeed;
@@ -252,7 +236,7 @@ bool Viewer::on_expose_event(GdkEventExpose* event)
 			{	
 				// Draw outline for cube
 				if (game->get(i, j) != -1)
-					drawCube(i, j, 8, GL_LINE_LOOP);
+					drawCube(i, j, 7, GL_LINE_LOOP);
 					
 				drawCube (i, j, game->get(i, j), GL_QUADS, true );
 			}
@@ -266,7 +250,7 @@ bool Viewer::on_expose_event(GdkEventExpose* event)
 			{				
 				// Draw outline for cube
 				if (game->get(i, j) != -1)
-					drawCube(i, j, 8, GL_LINE_LOOP);
+					drawCube(i, j, 7, GL_LINE_LOOP);
 					
 				drawCube (i, j, game->get(i, j), GL_QUADS );
 			}
@@ -277,6 +261,7 @@ bool Viewer::on_expose_event(GdkEventExpose* event)
 	{
 		// Some game over animation
 	}
+	
  	// We pushed a matrix onto the PROJECTION stack earlier, we 
 	// need to pop it.
 
@@ -286,13 +271,9 @@ bool Viewer::on_expose_event(GdkEventExpose* event)
 	// Swap the contents of the front and back buffers so we see what we
 	// just drew. This should only be done if double buffering is enabled.
 	if (doubleBuffer)
-	{
 		gldrawable->swap_buffers();
-	}		
 	else
-	{
-		glFlush();
-	}		
+		glFlush();	
 		
 	gldrawable->gl_end();
 
@@ -332,20 +313,22 @@ bool Viewer::on_button_press_event(GdkEventButton* event)
 	mouseDownPos[0] = event->x;
 	mouseDownPos[1] = event->y;
 	
+	// Stop rotating if a mosue button was clicked and the shift button is not down
 	if ((rotateAboutX || rotateAboutY || rotateAboutZ) && !shiftIsDown)
 	{
 		rotationSpeed = 0;
 		rotateTimer.disconnect();
 	}
 		
-	
+	// Set our appropriate flags to true
 	if (event->button == 1)
 		mouseB1Down = true;	
 	if (event->button == 2)
 		mouseB2Down = true;
 	if (event->button == 3)
 		mouseB3Down = true;
-	
+
+	// If shift is not held down we can stop rotating
 	if (!shiftIsDown)
 	{
 		rotateAboutX = false;
@@ -362,11 +345,13 @@ bool Viewer::on_button_release_event(GdkEventButton* event)
 
 	if (!shiftIsDown)
 	{
+		// Set the rotation speed based on how far the cursor has moved since the mouse down event
 		long difference = (long)timeOfLastMotionEvent - (long)event->time;
 		if (difference > -50)
 			rotationSpeed = (event->x - mouseDownPos[0]) / 10;	
 	}
 
+	// Set the appropriate flags to true and false
 	if (event->button == 1)
 	{
 		mouseB1Down = false;
@@ -387,12 +372,6 @@ bool Viewer::on_button_release_event(GdkEventButton* event)
 			rotateAboutZ = true;
 	}
 		
-	if (mouseB1Down && mouseB2Down && mouseB3Down)
-	{
-		startPos[0] = 0;
-		startPos[1] = 0;
-	}
-		
 	invalidate();
 	return true;
 }
@@ -402,15 +381,18 @@ bool Viewer::on_motion_notify_event(GdkEventMotion* event)
 	double x2x1;
 	if (shiftIsDown) // Start Scaling
 	{
+		// Store some initial values
 		if (startScalePos[0] == 0 && startScalePos[1] == 0)
 		{
 			startScalePos[0] = event->x;
 			startScalePos[1] = event->y;
 			return true;
 		}
-				
+		
+		// See how much we have moved
 		x2x1 = (event->x - startScalePos[0]);
 		
+		// Create a scale factor based on that value
 		if (x2x1 != 0)
 		{
 			x2x1 /= 500;
@@ -429,7 +411,10 @@ bool Viewer::on_motion_notify_event(GdkEventMotion* event)
 	}
 	else // Start rotating
 	{
+		// Keep track of the time of the last motion event
 		timeOfLastMotionEvent = event->time;
+		
+		// Determine change in distance. This is used to calculate the rotation angle
 		x2x1 = event->x - startPos[0];
 		x2x1 /= 10;
 		
@@ -440,193 +425,17 @@ bool Viewer::on_motion_notify_event(GdkEventMotion* event)
 		if (mouseB3Down) // Rotate z
 			rotationAngleZ += x2x1;
 			
-		//rotationSpeed = x2x1
-
 		// Reset the tickTimer
 		if (!rotateTimer.connected())
 			rotateTimer = Glib::signal_timeout().connect(sigc::bind(sigc::mem_fun(*this, &Viewer::on_expose_event), (GdkEventExpose *)NULL), 100);
 	}
 	
+	// Store the position of the cursor
 	startPos[0] = event->x;
 	startPos[1] = event->y;
 	invalidate();
 	return true;
 }
-
-/*void Viewer::drawCube(int y, int x, int colourId, GLenum mode)
-{
-	if (mode == GL_LINE_LOOP)
-		glLineWidth (2);
-		
-	switch (colourId)
-	{
-		case 0:
-			glColor3d(0.514, 0.839, 0.965); // blue
-			break;
-		case 1:
-			glColor3d(0.553, 0.60 , 0.796); // purple
-			break;
-		case 2:
-			glColor3d(0.988, 0.627, 0.373); // orange
-			break;
-		case 3:
-			glColor3d(0.690, 0.835, 0.529); // green
-			break;
-		case 4:
-			glColor3d(0.976, 0.553, 0.439); // red
-			break;
-		case 5:
-			glColor3d(0.949, 0.388, 0.639); // pink
-			break;
-		case 6:
-			glColor3d(1	 , 0.792, 0.204); // yellow
-			break;
-		case 7:
-			glColor3d(0.0, 0.0, 0.0); // black
-			break;
-		case 8: 
-			glColor3d(0, 0, 0);
-			break;
-		default:
-			return;
-	}
-	
-	double innerXMin = 0;
-	double innerYMin = 0;
-	double innerXMax = 1;
-	double innerYMax = 1;
-	double zMax = 1;
-	double zMin = 0;
-	
-	// Front faces
-	glBegin(mode);
-		glVertex3d(innerXMin + x, innerYMin + y, zMax);
-		glVertex3d(innerXMax + x, innerYMin + y, zMax);
-		glVertex3d(innerXMax + x, innerYMax + y, zMax);
-		glVertex3d(innerXMin + x, innerYMax + y, zMax);
-	glEnd();
-
-	// Back of front face
-	glBegin(mode);
-		glVertex3d(innerXMin + x, innerYMin + y, zMin);
-		glVertex3d(innerXMax + x, innerYMin + y, zMin);
-		glVertex3d(innerXMax + x, innerYMax + y, zMin);
-		glVertex3d(innerXMin + x, innerYMax + y, zMin);
-	glEnd();
-
-	// top face
-	glBegin(mode);
-		glVertex3d(innerXMin + x, innerYMax + y, zMin);
-		glVertex3d(innerXMax + x, innerYMax + y, zMin);
-		glVertex3d(innerXMax + x, innerYMax + y, zMax);
-		glVertex3d(innerXMin + x, innerYMax + y, zMax);
-	glEnd();
-
-	// left face
-	glBegin(mode);
-		glVertex3d(innerXMin + x, innerYMin + y, zMin);
-		glVertex3d(innerXMin + x, innerYMax + y, zMin);
-		glVertex3d(innerXMin + x, innerYMax + y, zMax);
-		glVertex3d(innerXMin + x, innerYMin + y, zMax);
-	glEnd();
-
-	// bottom face
-	glBegin(mode);
-		glVertex3d(innerXMin + x, innerYMin + y, zMin);
-		glVertex3d(innerXMax + x, innerYMin + y, zMin);
-		glVertex3d(innerXMax + x, innerYMin + y, zMax);
-		glVertex3d(innerXMin + x, innerYMin + y, zMax);
-	glEnd();
-
-	// right face
-	glBegin(mode);
-		glVertex3d(innerXMax + x, innerYMin + y, zMin);
-		glVertex3d(innerXMax + x, innerYMax + y, zMin);
-		glVertex3d(innerXMax + x, innerYMax + y, zMax);
-		glVertex3d(innerXMax + x, innerYMin + y, zMax);
-	glEnd();
-	
-	
-	innerXMin = 0.25;
-	innerYMin = 0.25;
-	innerXMax = 0.75;
-	innerYMax = 0.75;
-	zMin = 0.7;
-	zMax = 1;
-	
-	indexIntoSideColours= colourId*6;
-	
-	
-		// Back of front face
-		glBegin(mode);
-			glVertex3d(innerXMin + x, innerYMin + y, zMin);
-			glVertex3d(innerXMax + x, innerYMin + y, zMin);
-			glVertex3d(innerXMax + x, innerYMax + y, zMin);
-			glVertex3d(innerXMin + x, innerYMax + y, zMin);
-		glEnd();
-
-		// Front of front face		
-		glBegin(mode);
-			glVertex3d(innerXMin + x, innerYMin + y, zMax);
-			glVertex3d(innerXMax + x, innerYMin + y, zMax);
-			glVertex3d(innerXMax + x, innerYMax + y, zMax);
-			glVertex3d(innerXMin + x, innerYMax + y, zMax);
-		glEnd();
-		
-
-		indexIntoSideColours++;
-		
-		// top face
-		glColor3d(sideColours[indexIntoSideColours].r, sideColours[indexIntoSideColours].g, sideColours[indexIntoSideColours].b);
-		
-		glBegin(mode);
-			glVertex3d(0 + x, 1 + y, zMin);
-			glVertex3d(1 + x, 1 + y, zMin);
-			glVertex3d(innerXMax + x, innerYMax + y, zMax);
-			glVertex3d(innerXMin + x, innerYMax + y, zMax);
-		glEnd();
-		
-
-		indexIntoSideColours++;
-
-		// left face
-		glColor3d(sideColours[indexIntoSideColours].r, sideColours[indexIntoSideColours].g, sideColours[indexIntoSideColours].b);
-		
-		glBegin(mode);
-			glVertex3d(0 + x, 0 + y, zMin);
-			glVertex3d(0 + x, 1 + y, zMin);
-			glVertex3d(innerXMin + x, innerYMax+ y, zMax);
-			glVertex3d(innerXMin + x, innerYMin + y, zMax);
-		glEnd();
-		
-
-		indexIntoSideColours++;
-		
-		//bottom face
-		glColor3d(sideColours[indexIntoSideColours].r, sideColours[indexIntoSideColours].g, sideColours[indexIntoSideColours].b);
-
-		glBegin(mode);
-			glVertex3d(0 + x, 0 + y, zMin);
-			glVertex3d(1 + x, 0 + y, zMin);
-			glVertex3d(innerXMax + x, innerYMin + y, zMax);
-			glVertex3d(innerXMin + x, innerYMin + y, zMax);
-		glEnd();
-		
-
-		indexIntoSideColours++;
-		
-		// right face
-		glColor3d(sideColours[indexIntoSideColours].r, sideColours[indexIntoSideColours].g, sideColours[indexIntoSideColours].b);
-		
-		glBegin(mode);
-			glVertex3d(1 + x, 0 + y, zMin);
-			glVertex3d(1 + x, 1 + y, zMin);
-			glVertex3d(innerXMax + x, innerYMax + y, zMax);
-			glVertex3d(innerXMax + x, innerYMin + y, zMax);
-		glEnd();
-		
-
-}*/
 
 void Viewer::drawCube(int y, int x, int colourId, GLenum mode, bool multiColour)
 {
@@ -639,53 +448,45 @@ void Viewer::drawCube(int y, int x, int colourId, GLenum mode, bool multiColour)
 	b = 0;
 	switch (colourId)
 	{
-		case 0:
+		case 0:	// blue
 			r = 0.514;
 			g = 0.839;
 			b = 0.965;
-			glColor3d(r, g, b); // blue
+			break;              
+		case 1:	// purple       
+			r = 0.553;          
+			g = 0.6;            
+			b = 0.796;          
+			break;              
+		case 2: // orange       
+			r = 0.988;          
+			g = 0.627;          
+			b = 0.373;          
+			break;              
+		case 3:	// green        
+			r = 0.69;           
+			g = 0.835;          
+			b = 0.529;          
+			break;              
+		case 4:	// red          
+			r = 1.00;           
+			g = 0.453;          
+			b = 0.339;          
+			break;              
+		case 5:	// pink         
+			r = 0.949;          
+			g = 0.388;          
+			b = 0.639;          
+			break;              
+		case 6:	// yellow       
+			r = 1;              
+			g = 0.792;          
+			b = 0.204;          
 			break;
-		case 1:		
-			r = 0.553;
-			g = 0.6;
-			b = 0.796;
-			glColor3d(r, g, b); // purple
-			break;
-		case 2:
-			r = 0.988;
-			g = 0.627;
-			b = 0.373;
-			glColor3d(r, g, b); // orange
-			break;
-		case 3:
-			r = 0.69;
-			g = 0.835;
-			b = 0.529;
-			glColor3d(r, g, b); // green
-			break;
-		case 4:
-			r = 1.00;
-			g = 0.453;
-			b = 0.339;
-			glColor3d(r, g, b); // red
-			break;
-		case 5:
-			r = 0.949;
-			g = 0.388;
-			b = 0.639;
-			glColor3d(r, g, b); // pink
-			break;
-		case 6:
-			r = 1;
-			g = 0.792;
-			b = 0.204;
-			glColor3d(r, g, b); // yellow
-			break;
-		case 7:
-			glColor3d(0.0, 0.0, 0.0); // black
-			break;
-		case 8: 
-			glColor3d(0, 0, 0);
+		case 7:	// black
+			r = 0;
+			g = r;
+			b = g;
 			break;
 		default:
 			return;
@@ -697,7 +498,8 @@ void Viewer::drawCube(int y, int x, int colourId, GLenum mode, bool multiColour)
 	double innerYMax = 1;
 	double zMax = 1;
 	double zMin = 0;
-	// Front faces
+	
+	// Front face
 	glNormal3d(1, 0, 0);
 		
 	glColor3d(r, g, b);
@@ -710,6 +512,7 @@ void Viewer::drawCube(int y, int x, int colourId, GLenum mode, bool multiColour)
 	
 	// top face
 	glNormal3d(0, 1, 0);
+	
 	if (multiColour)
 		glColor3d(g, r, b);
 
@@ -722,6 +525,7 @@ void Viewer::drawCube(int y, int x, int colourId, GLenum mode, bool multiColour)
 	
 	// left face
 	glNormal3d(0, 0, 1);
+	
 	if (multiColour)
 		glColor3d(b, g, r);
 
@@ -734,6 +538,7 @@ void Viewer::drawCube(int y, int x, int colourId, GLenum mode, bool multiColour)
 	
 	// bottom face
 	glNormal3d(0, 1, 0);
+	
 	if (multiColour)
 		glColor3d(r, b, g);	
 
@@ -746,6 +551,7 @@ void Viewer::drawCube(int y, int x, int colourId, GLenum mode, bool multiColour)
 	
 	// right face
 	glNormal3d(0, 0, 1);
+	
 	if (multiColour)
 		glColor3d(b, r, g);
 	
@@ -770,20 +576,9 @@ void Viewer::drawCube(int y, int x, int colourId, GLenum mode, bool multiColour)
 	glEnd();
 }
 
-void Viewer::setRotationVec(Vector3D newVector)
-{
-	rotationVec = newVector;
-}
-
-Vector3D Viewer::getRotationVec()
-{
-	return rotationVec;
-}
-
 void Viewer::startScale()
 {
 	shiftIsDown = true;
-	disableSpin = true;
 }
 
 void Viewer::endScale()
@@ -795,6 +590,7 @@ void Viewer::endScale()
 
 void Viewer::setSpeed(Speed newSpeed)
 {
+	// Keep track of the current speed menu value
 	speed = newSpeed;
 	switch (newSpeed)
 	{
@@ -816,6 +612,7 @@ void Viewer::setSpeed(Speed newSpeed)
 
 void Viewer::toggleBuffer() 
 { 
+	// Toggle the value of doubleBuffer
 	doubleBuffer = !doubleBuffer;
 	invalidate();
 }
@@ -859,16 +656,16 @@ bool Viewer::gameTick()
 	scoreStream << game->getScore();
 	scoreLabel->set_text("Score:\t" + scoreStream.str());
 	
+	// If a line was cleared update the linesCleared widget
 	if (returnVal > 0)
 	{
     	linesStream << game->getLinesCleared();
 		linesClearedLabel->set_text("Lines Cleared:\t" + linesStream.str());
 	}
 	
-	linesLeftTillNextLevel -= returnVal;
 	if (game->getLinesCleared() / 10 > (DEFAULT_GAME_SPEED - gameSpeed) / 50 && gameSpeed > 75)
 	{
-		linesLeftTillNextLevel += 10;
+		// Increase the game speed
 		gameSpeed -= 50;
 		
 		// Update game tick timer
@@ -880,8 +677,6 @@ bool Viewer::gameTick()
 	{
 		gameOver = true;
 		tickTimer.disconnect();
-		
-		// Add animation to spin the game board
 	}
 	
 	invalidate();
@@ -890,6 +685,7 @@ bool Viewer::gameTick()
 
 void Viewer::resetView()
 {
+	// Reset all the rotations and scale factor
 	rotationSpeed = 0;
 	rotationAngleX = 0;
 	rotationAngleY = 0;
